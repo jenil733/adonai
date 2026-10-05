@@ -15,7 +15,6 @@ type RevealGroup = {
 
 const revealGroups: RevealGroup[] = [
   { selector: '.site-header > *', variant: 'reveal-down', step: 70 },
-  { selector: '.hero-content > *', variant: 'reveal-up', step: 110 },
   { selector: '.stats-panel .stat', variant: 'reveal-scale', step: 90 },
   { selector: '.about-copy', variant: 'reveal-left', step: 0 },
   { selector: '.about-gallery img', variant: 'reveal-scale', step: 100 },

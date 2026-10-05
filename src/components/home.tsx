@@ -29,10 +29,47 @@ function ArrowIcon() {
 export default function Home() {
   const statsPanelRef = useRef<HTMLDListElement>(null)
   const animationFrameRef = useRef<number | null>(null)
+  const heroVideoRefs = useRef<Array<HTMLVideoElement | null>>([])
+  const videoTransitionTimerRef = useRef<number | null>(null)
+  const isVideoTransitioningRef = useRef(false)
+  const [activeVideo, setActiveVideo] = useState(0)
+  const [incomingVideo, setIncomingVideo] = useState<number | null>(null)
   const [displayedStats, setDisplayedStats] = useState(() =>
     stats.map((stat) => formatStat(0, stat.decimals, stat.suffix)),
   )
   const [isCounting, setIsCounting] = useState(false)
+
+  const startVideoTransition = (videoIndex: number) => {
+    if (videoIndex !== activeVideo || isVideoTransitioningRef.current) return
+
+    const nextVideoIndex = videoIndex === 0 ? 1 : 0
+    const currentVideo = heroVideoRefs.current[videoIndex]
+    const nextVideo = heroVideoRefs.current[nextVideoIndex]
+    if (!currentVideo || !nextVideo) return
+
+    isVideoTransitioningRef.current = true
+    nextVideo.currentTime = 0
+    void nextVideo.play().catch(() => undefined)
+    setIncomingVideo(nextVideoIndex)
+
+    videoTransitionTimerRef.current = window.setTimeout(() => {
+      currentVideo.pause()
+      currentVideo.currentTime = 0
+      setActiveVideo(nextVideoIndex)
+      setIncomingVideo(null)
+      isVideoTransitioningRef.current = false
+      videoTransitionTimerRef.current = null
+    }, 1200)
+  }
+
+  const handleHeroVideoTimeUpdate = (videoIndex: number) => {
+    const video = heroVideoRefs.current[videoIndex]
+    if (!video || !Number.isFinite(video.duration)) return
+
+    if (video.duration - video.currentTime <= 1.25) {
+      startVideoTransition(videoIndex)
+    }
+  }
 
   useEffect(() => {
     const panel = statsPanelRef.current
@@ -90,28 +127,50 @@ export default function Home() {
     }
   }, [])
 
+  useEffect(() => () => {
+    if (videoTransitionTimerRef.current !== null) {
+      window.clearTimeout(videoTransitionTimerRef.current)
+    }
+  }, [])
+
   return (
     <main className="home" id="home">
       <Navbar />
 
       <section className="hero-section" aria-labelledby="hero-title">
-        <img className="hero-background" src={heroImage} alt="Luxury coach travelling through coastal mountains at sunset" />
+        {[0, 1].map((videoIndex) => (
+          <video
+            className={`hero-background hero-video${videoIndex === activeVideo ? ' is-active' : ''}${videoIndex === incomingVideo ? ' is-entering' : ''}`}
+            ref={(video) => { heroVideoRefs.current[videoIndex] = video }}
+            autoPlay={videoIndex === 0}
+            muted
+            playsInline
+            preload="auto"
+            poster={videoIndex === 0 ? heroImage : undefined}
+            aria-hidden="true"
+            onTimeUpdate={() => handleHeroVideoTimeUpdate(videoIndex)}
+            onEnded={() => startVideoTransition(videoIndex)}
+            key={videoIndex}
+          >
+            <source src="/videos/hero-video.mp4" type="video/mp4" />
+          </video>
+        ))}
         <div className="hero-shade" />
 
         <div className="hero-content">
-          <h1 id="hero-title">
+          <h1 className="hero-rise-in hero-rise-delay-1" id="hero-title">
             Your <span>Trusted Partner</span>
             <br />
             for Group Travel &amp; Touring Needs
           </h1>
 
-          <p>
+          <p className="hero-rise-in hero-rise-delay-2">
             At Adonai Holidays, we make your journeys comfortable, convenient and
             <br className="desktop-break" /> memorable with our premium fleet of buses and customized travel
             <br className="desktop-break" /> solutions.
           </p>
 
-          <div className="hero-actions">
+          <div className="hero-actions hero-rise-in hero-rise-delay-3">
             <a className="button button-outline" href="#buses">
               Explore Buses <ArrowIcon />
             </a>
